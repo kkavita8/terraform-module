@@ -22,7 +22,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ./envs/${{ matrix.environment }}
+        working-directory: ./enviroment/${{ matrix.environment }}
 
     steps:
       - name: Checkout source
