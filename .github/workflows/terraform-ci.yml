@@ -8,7 +8,6 @@ on:
 
 env:
   TF_VERSION: '1.7.4'
-  AZURE_REGION: 'eastus'
 
 jobs:
   terraform:
@@ -19,35 +18,48 @@ jobs:
       matrix:
         environment: [dev, prod]
 
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./enviroment/${{ matrix.environment }}
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Check if environment folder exists
+        id: check-dir
+        run: |
+          if [ ! -d "./envs/${{ matrix.environment }}" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Set up Terraform
+        if: steps.check-dir.outputs.skip == 'false'
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
       - name: Terraform Init
+        if: steps.check-dir.outputs.skip == 'false'
+        working-directory: ./envs/${{ matrix.environment }}
         run: terraform init
 
       - name: Terraform Format
+        if: steps.check-dir.outputs.skip == 'false'
+        working-directory: ./envs/${{ matrix.environment }}
         run: terraform fmt -check -recursive
 
       - name: Terraform Validate
+        if: steps.check-dir.outputs.skip == 'false'
+        working-directory: ./envs/${{ matrix.environment }}
         run: terraform validate
 
       - name: Terraform Plan
+        if: steps.check-dir.outputs.skip == 'false'
+        working-directory: ./envs/${{ matrix.environment }}
         run: terraform plan -out=tfplan
 
-      # Optional: Terraform Apply (Controlled by Manual Trigger or Flag)
-      - name: Terraform Apply (only on push to main)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      - name: Terraform Apply (only on main)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.check-dir.outputs.skip == 'false'
+        working-directory: ./envs/${{ matrix.environment }}
         run: terraform apply -auto-approve tfplan
         env:
           ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
