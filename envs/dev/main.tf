@@ -3,7 +3,7 @@ module "vnet" {
   vnet_name           = "dev-vnet"
   address_space       = ["10.0.0.0/16"]
   location            = var.location
-  resource_group_name = var.resource_group_name
+  resource_group_name = var.azurerm_resource_group
   tags                = { environment = "dev" }
 
   subnets = [
